@@ -10,15 +10,15 @@
 }
 
 #snake-start, #snake-renew {
-width: 150px;
-padding: 15px;
-color: white;
-background: green;
-text-align: center;
-margin-right: 10px;
+    width: 150px;
+    padding: 15px;
+    color: white;
+    background: green;
+    text-align: center;
+    margin-right: 10px;
 }
 
-#snake-start{
+#snake-start {
     float: left;
 }
 
