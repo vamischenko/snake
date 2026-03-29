@@ -1,14 +1,21 @@
 <!doctype html>
-<html>
+<html lang="ru">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Змейка</title>
-    <link href="css/style.css" rel="stylesheet"/>
-    <script src="js/snake.js"></script>
+    <link href="css/style.css" rel="stylesheet">
+    <script src="js/snake.js" defer></script>
 </head>
 <body>
-<div id="snake-field"></div>
-<button id="snake-start">Старт</button>
-<button id="snake-renew">Новая игра</button>
-<div id="score-field">Счет:<span id="total-score">0</span></div>
+    <main class="app">
+        <h1 class="app-title">Змейка</h1>
+        <div id="snake-field" class="snake-field" aria-label="Игровое поле"></div>
+        <div class="controls">
+            <button type="button" id="snake-start" class="btn">Старт</button>
+            <button type="button" id="snake-renew" class="btn">Новая игра</button>
+        </div>
+        <div id="score-field" class="score-field">Счёт: <span id="total-score">0</span></div>
+    </main>
 </body>
 </html>

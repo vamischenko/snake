@@ -1,25 +1,20 @@
-const FIELD_SIZE_X = 20;
-const FIELD_SIZE_Y = 20;
-const SNAKE_SPEED = 300;
+const FIELD_ROWS = 20;
+const FIELD_COLS = 20;
+const SNAKE_SPEED_MS = 300;
+
+let snakeTimer = null;
 let isGameStarted = false;
-let snakeTimer;
-
 let score = 0;
-
 let direction = 'top';
-
 let snake = [];
-
-let snakeCoordX;
-let snakeCoordY;
+let snakeCoordRow;
+let snakeCoordCol;
 
 function init() {
     prepareGameField();
 
     document.getElementById('snake-start').addEventListener('click', startGameHandler);
-
     document.getElementById('snake-renew').addEventListener('click', refreshGameHandler);
-
     window.addEventListener('keydown', changeDirectionHandler);
 }
 
@@ -28,63 +23,91 @@ function prepareGameField() {
     gameTable.classList.add('game-table');
     gameTable.id = 'game-table';
 
-    for (let i = 0; i < FIELD_SIZE_X; i++) {
-        var row = document.createElement('tr');
-        row.classList.add('game-table-row');
+    for (let row = 0; row < FIELD_ROWS; row++) {
+        const tr = document.createElement('tr');
+        tr.classList.add('game-table-row');
 
-        for (var j = 0; j < FIELD_SIZE_Y; j++) {
-            var cell = document.createElement('td');
-            cell.classList.add('game-table-cell');
-
-            row.appendChild(cell);
+        for (let col = 0; col < FIELD_COLS; col++) {
+            const td = document.createElement('td');
+            td.classList.add('game-table-cell');
+            tr.appendChild(td);
         }
 
-        gameTable.appendChild(row);
+        gameTable.appendChild(tr);
     }
 
     document.getElementById('snake-field').appendChild(gameTable);
 }
 
-function startGameHandler() {
-    isGameStarted = true;
-    respawn();
+function clearBoardCells() {
+    document.querySelectorAll('.game-table-cell').forEach((cell) => {
+        cell.classList.remove('snake-unit', 'food-unit', 'mongoose-unit');
+    });
+}
 
-    snakeTimer = setInterval(move, SNAKE_SPEED);
-    let createApple = createFood('apple');
-    setTimeout(createApple, 500);
+function startGameHandler() {
+    if (snakeTimer) {
+        clearInterval(snakeTimer);
+        snakeTimer = null;
+    }
+
+    clearBoardCells();
+    snake = [];
+    score = 0;
+    addScore(0);
+    direction = 'top';
+    isGameStarted = true;
+
+    respawn();
+    snakeTimer = setInterval(move, SNAKE_SPEED_MS);
+    setTimeout(() => createFood('apple'), 500);
 }
 
 function refreshGameHandler() {
-    window.location.reload();
+    if (snakeTimer) {
+        clearInterval(snakeTimer);
+        snakeTimer = null;
+    }
+    isGameStarted = false;
+    snake = [];
+    score = 0;
+    addScore(0);
+    direction = 'top';
+    clearBoardCells();
 }
 
 function changeDirectionHandler(event) {
-    switch (event.keyCode) {
-        case 37:
-            if (direction != 'right') direction = 'left';
+    const key = event.key;
+    if (!['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(key)) {
+        return;
+    }
+    event.preventDefault();
+
+    switch (key) {
+        case 'ArrowLeft':
+            if (direction !== 'right') direction = 'left';
             break;
-        case 38:
-            if (direction != 'bottom') direction = 'top';
+        case 'ArrowUp':
+            if (direction !== 'bottom') direction = 'top';
             break;
-        case 39:
-            if (direction != 'left') direction = 'right';
+        case 'ArrowRight':
+            if (direction !== 'left') direction = 'right';
             break;
-        case 40:
-            if (direction != 'top') direction = 'bottom';
+        case 'ArrowDown':
+            if (direction !== 'top') direction = 'bottom';
             break;
     }
 }
 
 function respawn() {
-    snakeCoordX = Math.floor(FIELD_SIZE_X / 2);
-    snakeCoordY = Math.floor(FIELD_SIZE_Y / 2);
+    snakeCoordRow = Math.floor(FIELD_ROWS / 2);
+    snakeCoordCol = Math.floor(FIELD_COLS / 2);
 
-    var gameTable = document.getElementById('game-table');
-    // head
-    var snakeHead = gameTable.children[snakeCoordX].children[snakeCoordY];
+    const gameTable = document.getElementById('game-table');
+    const snakeHead = gameTable.children[snakeCoordRow].children[snakeCoordCol];
     snakeHead.classList.add('snake-unit');
-    // tail
-    var snakeTail = gameTable.children[snakeCoordX + 1].children[snakeCoordY];
+
+    const snakeTail = gameTable.children[snakeCoordRow + 1].children[snakeCoordCol];
     snakeTail.classList.add('snake-unit');
 
     snake.push(snakeTail);
@@ -92,38 +115,49 @@ function respawn() {
 }
 
 function move() {
-    var gameTable = document.getElementById('game-table');
-    var newUnit;
+    if (!isGameStarted) {
+        return;
+    }
 
-    var i = 18;
+    const gameTable = document.getElementById('game-table');
+    let newUnit;
+
     switch (direction) {
         case 'top':
-            if (snakeCoordX == 0) {
-                newUnit = gameTable.children[FIELD_SIZE_X - 1].children[snakeCoordY];
-                snakeCoordX = FIELD_SIZE_X;
-                snakeCoordX--;
-            } else newUnit = gameTable.children[--snakeCoordX].children[snakeCoordY];
+            if (snakeCoordRow === 0) {
+                newUnit = gameTable.children[FIELD_ROWS - 1].children[snakeCoordCol];
+                snakeCoordRow = FIELD_ROWS - 1;
+            } else {
+                snakeCoordRow--;
+                newUnit = gameTable.children[snakeCoordRow].children[snakeCoordCol];
+            }
             break;
         case 'bottom':
-            if (snakeCoordX == FIELD_SIZE_X - 1) {
-                newUnit = gameTable.children[0].children[snakeCoordY];
-                snakeCoordX = -1;
-                snakeCoordX++;
-            } else newUnit = gameTable.children[++snakeCoordX].children[snakeCoordY];
+            if (snakeCoordRow === FIELD_ROWS - 1) {
+                newUnit = gameTable.children[0].children[snakeCoordCol];
+                snakeCoordRow = 0;
+            } else {
+                snakeCoordRow++;
+                newUnit = gameTable.children[snakeCoordRow].children[snakeCoordCol];
+            }
             break;
         case 'right':
-            if (snakeCoordY == FIELD_SIZE_Y - 1) {
-                newUnit = gameTable.children[snakeCoordX].children[0];
-                snakeCoordY = -1;
-                snakeCoordY++;
-            } else newUnit = gameTable.children[snakeCoordX].children[++snakeCoordY];
+            if (snakeCoordCol === FIELD_COLS - 1) {
+                newUnit = gameTable.children[snakeCoordRow].children[0];
+                snakeCoordCol = 0;
+            } else {
+                snakeCoordCol++;
+                newUnit = gameTable.children[snakeCoordRow].children[snakeCoordCol];
+            }
             break;
         case 'left':
-            if (snakeCoordY == 0) {
-                newUnit = gameTable.children[snakeCoordX].children[FIELD_SIZE_Y - 1];
-                snakeCoordY = FIELD_SIZE_Y;
-                snakeCoordY--;
-            } else newUnit = gameTable.children[snakeCoordX].children[--snakeCoordY];
+            if (snakeCoordCol === 0) {
+                newUnit = gameTable.children[snakeCoordRow].children[FIELD_COLS - 1];
+                snakeCoordCol = FIELD_COLS - 1;
+            } else {
+                snakeCoordCol--;
+                newUnit = gameTable.children[snakeCoordRow].children[snakeCoordCol];
+            }
             break;
     }
 
@@ -132,8 +166,8 @@ function move() {
         snake.push(newUnit);
 
         if (!isFood(newUnit)) {
-            var snakeRemoved = snake.shift();
-            snakeRemoved.classList.remove('snake-unit');
+            const removed = snake.shift();
+            removed.classList.remove('snake-unit');
         }
     } else {
         gameOver();
@@ -152,26 +186,31 @@ function isFood(unit) {
         createFood('apple');
         createFood('mongoose');
         return true;
-    } else if (unit.classList.contains('mongoose-unit')) {
-        gameOver();
-    } else {
-        return false;
     }
+    if (unit.classList.contains('mongoose-unit')) {
+        unit.classList.remove('mongoose-unit');
+        gameOver();
+        return true;
+    }
+    return false;
 }
 
-function createFood(obj) {
-    var foodCreated = false;
-    var gameTable = document.getElementById('game-table');
+function createFood(kind) {
+    const gameTable = document.getElementById('game-table');
+    let foodCreated = false;
 
     while (!foodCreated) {
-        var foodX = Math.floor(Math.random() * FIELD_SIZE_X);
-        var foodY = Math.floor(Math.random() * FIELD_SIZE_Y);
+        const foodRow = Math.floor(Math.random() * FIELD_ROWS);
+        const foodCol = Math.floor(Math.random() * FIELD_COLS);
+        const foodCell = gameTable.children[foodRow].children[foodCol];
 
-        var foodCell = gameTable.children[foodX].children[foodY];
-
-        if (!foodCell.classList.contains('snake-unit')) {
-            if (obj == 'apple') foodCell.classList.add('food-unit');
-            if (obj == 'mongoose') foodCell.classList.add('mongoose-unit');
+        if (
+            !foodCell.classList.contains('snake-unit') &&
+            !foodCell.classList.contains('food-unit') &&
+            !foodCell.classList.contains('mongoose-unit')
+        ) {
+            if (kind === 'apple') foodCell.classList.add('food-unit');
+            if (kind === 'mongoose') foodCell.classList.add('mongoose-unit');
             foodCreated = true;
         }
     }
@@ -179,14 +218,16 @@ function createFood(obj) {
 
 function gameOver() {
     isGameStarted = false;
-    clearInterval(snakeTimer);
-    alert('GAME OVER');
+    if (snakeTimer) {
+        clearInterval(snakeTimer);
+        snakeTimer = null;
+    }
+    alert('Игра окончена');
     refreshGameHandler();
 }
 
-function addScore(score) {
-    var totalScore = document.getElementById('total-score');
-    totalScore.innerText = score;
+function addScore(value) {
+    document.getElementById('total-score').textContent = String(value);
 }
 
-window.onload = init;
+window.addEventListener('DOMContentLoaded', init);
